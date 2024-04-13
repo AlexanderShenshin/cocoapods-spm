@@ -77,7 +77,7 @@ module Pod
 
         def recursive_products_of(product)
           products = [product] + direct_products_of(product).flat_map do |child|
-            [child] + recursive_products_of(child)
+            recursive_products_of(child)
           end
           @result.spm_products[product.name] = products
           products
@@ -102,13 +102,18 @@ module Pod
         def product_from_hash(hash, metadata)
           if hash.key?("byName")
             name = hash["byName"][0]
-            pkg = metadata["name"]
+            pkg = is_pkg_product(name, metadata) ? metadata["name"] : name
           elsif hash.key?("product")
             name, pkg = hash["product"]
           elsif hash.key?("target")
-            # TODO: Handle this
+            name = hash["target"][0]
+            pkg = is_pkg_product(name, metadata) ? metadata["name"] : name
           end
           create_product(pkg, name)
+        end
+
+        def is_pkg_product(name, metadata)
+          metadata.products.any? { |h| h["name"] == name } || metadata.targets.any? { |h| h["name"] == name }
         end
 
         def create_product(pkg, name)
